@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   motion, 
@@ -29,8 +30,36 @@ import {
   Menu,
   X
 } from 'lucide-react';
+import * as THREE from 'three';
+import emailjs from '@emailjs/browser';
+
+// --- Constants & Types ---
+
+const CONTACT = {
+  phone: '+234 916 105 2803',
+  whatsapp: 'https://wa.me/2349161052803',
+  email: 'btee7746@gmail.com',
+  instagram: 'https://www.instagram.com/tboywurldwebstudio/',
+  handle: '@tboywurldwebstudio',
+};
+
+interface Project {
+  title: string;
+  category: string;
+  image: string;
+  link: string;
+}
 
 // --- Components ---
+
+const RocketIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/>
+    <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/>
+    <path d="M9 12H4s.55-3.03 2-5c1.62-2.2 5-3 5-3"/>
+    <path d="M12 15v5s3.03-.55 5-2c2.2-1.62 3-5 3-5"/>
+  </svg>
+);
 
 const Logo = ({ className = "" }: { className?: string }) => (
   <div className={`relative flex flex-col items-center justify-center ${className}`}>
@@ -61,7 +90,127 @@ const Logo = ({ className = "" }: { className?: string }) => (
   </div>
 );
 
-const ProjectPreviewModal = ({ project, isOpen, onClose }: { project: any, isOpen: boolean, onClose: () => void }) => {
+const FloatingSphere = () => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    if (!containerRef.current || !canvasRef.current) return;
+
+    const container = containerRef.current;
+    const canvas = canvasRef.current;
+
+    // Dimensions
+    let width = container.clientWidth || 400;
+    let height = container.clientHeight || 400;
+
+    // Renderer
+    const renderer = new THREE.WebGLRenderer({
+      canvas,
+      alpha: true,
+      antialias: true
+    });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+    // Scene
+    const scene = new THREE.Scene();
+
+    // Camera
+    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+    camera.position.z = 7;
+
+    // Group to hold spheres and control synchronized animations
+    const group = new THREE.Group();
+    scene.add(group);
+
+    // Geometry
+    const geometry = new THREE.SphereGeometry(2.5, 64, 64);
+
+    // Materials
+    const mainMaterial = new THREE.MeshStandardMaterial({
+      color: 0xA855F7,
+      roughness: 0.1,
+      metalness: 0.8,
+      wireframe: false
+    });
+
+    const wireMaterial = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      wireframe: true,
+      opacity: 0.04,
+      transparent: true
+    });
+
+    // Meshes
+    const sphere = new THREE.Mesh(geometry, mainMaterial);
+    const wireframeSphere = new THREE.Mesh(geometry, wireMaterial);
+
+    group.add(sphere);
+    group.add(wireframeSphere);
+
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+    scene.add(ambientLight);
+
+    const pointLight1 = new THREE.PointLight(0xA855F7, 80);
+    pointLight1.position.set(10, 10, 10);
+    scene.add(pointLight1);
+
+    const pointLight2 = new THREE.PointLight(0xC084FC, 40);
+    pointLight2.position.set(-10, -5, -10);
+    scene.add(pointLight2);
+
+    // Animation variable
+    let animationId: number;
+
+    const animate = () => {
+      animationId = requestAnimationFrame(animate);
+
+      group.rotation.y += 0.003;
+      group.rotation.x += 0.001;
+      group.position.y = Math.sin(Date.now() * 0.001) * 0.3;
+
+      renderer.render(scene, camera);
+    };
+
+    animate();
+
+    // Resize handling using ResizeObserver as suggested in Responsive guidelines
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        width = entry.contentRect.width;
+        height = entry.contentRect.height;
+
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+
+        renderer.setSize(width, height);
+      }
+    });
+
+    resizeObserver.observe(container);
+
+    // Proper Cleanup
+    return () => {
+      cancelAnimationFrame(animationId);
+      resizeObserver.disconnect();
+      
+      geometry.dispose();
+      mainMaterial.dispose();
+      wireMaterial.dispose();
+      renderer.dispose();
+    };
+  }, []);
+
+  return (
+    <div ref={containerRef} className="w-full h-full min-h-[350px] flex items-center justify-center relative select-none pointer-events-none">
+      <canvas ref={canvasRef} className="w-full h-full block" />
+    </div>
+  );
+};
+
+const ProjectPreviewModal = ({ project, isOpen, onClose }: { project: Project | null, isOpen: boolean, onClose: () => void }) => {
   if (!project) return null;
   
   return (
@@ -88,7 +237,7 @@ const ProjectPreviewModal = ({ project, isOpen, onClose }: { project: any, isOpe
             className="relative w-full h-full max-w-6xl glass rounded-[2.5rem] overflow-hidden border border-white/10 shadow-2xl flex flex-col"
           >
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b border-white/5">
+            <div className="flex items-center justify-between p-6 border-b border-white/5 bg-black/40 backdrop-blur-md">
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center text-accent">
                   <Monitor size={20} />
@@ -118,16 +267,22 @@ const ProjectPreviewModal = ({ project, isOpen, onClose }: { project: any, isOpe
               </div>
             </div>
             
-            {/* Modal Content - Iframe */}
-            <div className="flex-1 bg-white relative">
-              <iframe 
-                src={project.link} 
-                className="w-full h-full border-none"
-                title={`${project.title} Preview`}
-                loading="lazy"
+            {/* Modal Content - Safe Screenshot / Photo Preview */}
+            <div className="flex-1 relative overflow-hidden bg-[#0a0a0a] flex flex-col items-center justify-center gap-6 p-10 select-none">
+              <img 
+                src={project.image} 
+                alt={project.title} 
+                className="w-full max-w-2xl rounded-2xl shadow-2xl border border-white/10 object-cover max-h-[60%] md:max-h-[70%]"
               />
-              {/* Overlay in case of X-Frame-Options issues */}
-              <div className="absolute inset-0 pointer-events-none shadow-[inset_0_0_100px_rgba(0,0,0,0.05)]" />
+              <p className="text-gray-400 text-sm text-center">Live preview unavailable due to browser security. Open the full site below.</p>
+              <a 
+                href={project.link} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="px-8 py-4 bg-accent text-white font-bold rounded-2xl flex items-center gap-2 hover:bg-accent-glow transition-all shadow-lg shadow-purple-950/25"
+              >
+                Open Live Site <ArrowUpRight size={20} />
+              </a>
             </div>
           </motion.div>
         </motion.div>
@@ -302,75 +457,87 @@ const Navbar = () => {
 
 const Hero = () => {
   return (
-    <section className="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden">
+    <section className="relative min-h-screen flex items-center justify-center pt-28 pb-12 overflow-hidden">
       {/* Background Orbs */}
       <div className="absolute top-1/4 -left-20 w-96 h-96 bg-accent/20 rounded-full blur-[120px] animate-pulse" />
       <div className="absolute bottom-1/4 -right-20 w-[500px] h-[500px] bg-purple-900/10 rounded-full blur-[150px]" />
       
-      {/* Grid Pattern */}
-      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-50 mix-blend-overlay pointer-events-none" />
+      {/* Grid Pattern with exact inline URL encoded Noise SVG avoiding external dependency */}
+      <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20viewBox=%220%200%20256%20256%22%20xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter%20id=%22noise%22%3E%3CfeTurbulence%20type=%22fractalNoise%22%20baseFrequency=%220.9%22%20numOctaves=%224%22%20stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect%20width=%22100%25%22%20height=%22100%25%22%20filter=%22url(%23noise)%22/%3E%3C/svg%3E')] opacity-20 brightness-50 mix-blend-overlay pointer-events-none" />
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
 
-      <div className="max-w-7xl mx-auto px-6 relative z-10 text-center">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5 }}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-full mb-8"
-        >
-          <div className="w-2 h-2 bg-accent rounded-full animate-ping" />
-          <span className="text-xs font-semibold uppercase tracking-widest text-gray-400">Available for new projects</span>
-        </motion.div>
+      <div className="max-w-7xl mx-auto px-6 relative z-10 w-full animate-fade-in">
+        {/* Responsive Grid Hero (Three.js FloatingSphere Left, content Right on Desktop) */}
+        <div className="grid lg:grid-cols-2 gap-12 items-center mb-16 text-center lg:text-left">
+          
+          {/* Left Column - 3D FloatingSphere (Desktop Only) */}
+          <div className="hidden lg:block h-[500px] relative">
+            <FloatingSphere />
+          </div>
 
-        <motion.h1
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-          className="text-5xl md:text-8xl font-display font-bold tracking-tight mb-8 leading-[1.1] max-w-5xl mx-auto"
-        >
-          Building Modern Websites That Make <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-fuchsia-600">Businesses Stand Out</span>
-        </motion.h1>
-
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
-          className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-12 leading-relaxed"
-        >
-          Tboywurld Web Studio creates premium landing pages and business websites for brands that want a stronger online presence.
-        </motion.p>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
-          className="flex flex-col sm:flex-row items-center justify-center gap-6"
-        >
-          <Magnetic>
-            <a
-              href="#projects"
-              className="group relative px-8 py-4 bg-purple-600 text-white font-bold rounded-2xl transition-all hover:scale-105 active:scale-95 flex items-center gap-2 shadow-lg shadow-purple-900/40"
+          {/* Right Column - Text & Content */}
+          <div className="flex flex-col items-center lg:items-start justify-center">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5 }}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-full mb-8"
             >
-              View Projects
-              <ArrowUpRight className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" size={20} />
-            </a>
-          </Magnetic>
-          <Magnetic>
-            <a
-              href="#contact"
-              className="px-8 py-4 glass text-white font-bold rounded-2xl transition-all hover:bg-white/10 active:scale-95 border border-white/20"
-            >
-              Contact Me
-            </a>
-          </Magnetic>
-        </motion.div>
+              <div className="w-2 h-2 bg-accent rounded-full animate-ping" />
+              <span className="text-xs font-semibold uppercase tracking-widest text-gray-400">Available for new projects</span>
+            </motion.div>
 
-        {/* Floating Mockup Card */}
+            <motion.h1
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="text-5xl md:text-7xl lg:text-8xl font-display font-bold tracking-tight mb-8 leading-[1.1] max-w-3xl"
+            >
+              Building Modern Websites That Make <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-fuchsia-600">Businesses Stand Out</span>
+            </motion.h1>
+
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.4 }}
+              className="text-lg md:text-xl text-gray-400 max-w-xl mb-12 leading-relaxed"
+            >
+              Tboywurld Web Studio creates premium landing pages and business websites for brands that want a stronger online presence.
+            </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.6 }}
+              className="flex flex-col sm:flex-row items-center gap-6"
+            >
+              <Magnetic>
+                <a
+                  href="#projects"
+                  className="group relative px-8 py-4 bg-purple-600 text-white font-bold rounded-2xl transition-all hover:scale-105 active:scale-95 flex items-center gap-2 shadow-lg shadow-purple-900/40"
+                >
+                  View Projects
+                  <ArrowUpRight className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" size={20} />
+                </a>
+              </Magnetic>
+              <Magnetic>
+                <a
+                  href="#contact"
+                  className="px-8 py-4 glass text-white font-bold rounded-2xl transition-all hover:bg-white/10 active:scale-95 border border-white/20"
+                >
+                  Contact Me
+                </a>
+              </Magnetic>
+            </motion.div>
+          </div>
+        </div>
+
+        {/* Floating Mockup Card remains full width below */}
         <motion.div
           initial={{ opacity: 0, y: 100 }}
-          animate={{ opacity: 1, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.8 }}
-          className="mt-20 relative max-w-4xl mx-auto"
+          className="relative max-w-4xl mx-auto"
         >
           <div className="relative rounded-3xl overflow-hidden glass p-4 shadow-2xl border border-white/10">
             <img 
@@ -424,7 +591,7 @@ const AboutSection = () => {
               A modern creative studio focused on <span className="text-gray-500">Business Growth.</span>
             </h3>
             <p className="text-lg text-gray-400 mb-10 leading-relaxed">
-              Introduce Tboywurld Web Studio as a modern creative web design studio focused on helping businesses grow online with clean, responsive, conversion-focused websites. We blend aesthetics with functionality to deliver digital experiences that leave a lasting impression.
+              We are a modern creative web design studio helping businesses grow online with clean, responsive, and conversion-focused websites. Based in Nigeria, serving clients globally — we blend bold aesthetics with sharp functionality to deliver digital experiences that leave a lasting impression.
             </p>
             
             <div className="grid grid-cols-2 gap-6">
@@ -526,9 +693,9 @@ const ServicesSection = () => {
 
 const ProcessSection = () => {
   const steps = [
-    { title: 'Research & Strategy', desc: 'Understanding your business goals, target audience, and competition to create a roadmap.', icon: <Search /> },
-    { title: 'Design & Development', desc: 'Crafting beautiful UI and turning it into a high-performance, pixel-perfect website.', icon: <Code2 /> },
-    { title: 'Optimization & Testing', desc: 'Ensuring speed, SEO performance, and cross-device compatibility across all browsers.', icon: <Zap /> },
+    { title: 'Research & Strategy', desc: 'Understanding your business goals, target audience, and competition to create a roadmap.', icon: <Search size={22} /> },
+    { title: 'Design & Development', desc: 'Crafting beautiful UI and turning it into a high-performance, pixel-perfect website.', icon: <Code2 size={22} /> },
+    { title: 'Optimization & Testing', desc: 'Ensuring speed, SEO performance, and cross-device compatibility across all browsers.', icon: <Zap size={22} /> },
     { title: 'Launch & Support', desc: 'Going live and providing ongoing support to ensure your growth never stops.', icon: <RocketIcon /> },
   ];
 
@@ -562,8 +729,10 @@ const ProcessSection = () => {
                 viewport={{ once: true }}
                 className="text-center group"
               >
-                <div className="w-20 h-20 bg-black border-2 border-white/10 rounded-full flex items-center justify-center mx-auto mb-8 relative z-20 group-hover:border-accent group-hover:shadow-[0_0_20px_rgba(168,85,247,0.3)] transition-all bg-[#050505]">
-                  <span className="text-xl font-display font-bold text-gray-500 group-hover:text-accent">0{i+1}</span>
+                {/* Renders icon inside the circle AND show the step number as a small absolute badge */}
+                <div className="relative w-20 h-20 bg-black border-2 border-white/10 rounded-full flex items-center justify-center mx-auto mb-8 z-20 group-hover:border-accent group-hover:shadow-[0_0_20px_rgba(168,85,247,0.3)] transition-all bg-[#050505]">
+                  <span className="absolute -top-2 -right-2 w-6 h-6 bg-accent rounded-full text-xs font-bold flex items-center justify-center z-10 text-white">0{i+1}</span>
+                  <div className="text-accent">{step.icon}</div>
                 </div>
                 <h4 className="text-2xl font-display font-bold mb-4">{step.title}</h4>
                 <p className="text-gray-400 leading-relaxed">{step.desc}</p>
@@ -576,8 +745,8 @@ const ProcessSection = () => {
   );
 };
 
-const ProjectSection = ({ onProjectClick }: { onProjectClick: (project: any) => void }) => {
-  const projects = [
+const ProjectSection = ({ onProjectClick }: { onProjectClick: (project: Project) => void }) => {
+  const projects: Project[] = [
     {
       title: 'Swift Ocean Lounge',
       category: 'Luxury Hospitality',
@@ -701,7 +870,7 @@ const FAQSection = () => {
                     className="overflow-hidden"
                   >
                     <div className="p-6 pt-0 text-gray-400 leading-relaxed border-t border-white/5 mt-2">
-                      {faq.a}
+                       {faq.a}
                     </div>
                   </motion.div>
                 )}
@@ -716,11 +885,29 @@ const FAQSection = () => {
 
 const ContactSection = () => {
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitted(true);
-    setTimeout(() => setIsSubmitted(false), 5000);
+    setIsSending(true);
+    try {
+      // Connect contact form using EmailJS service
+      // Replace these values with your actual EmailJS credentials directly, or via environment variables (recommended)
+      await emailjs.sendForm(
+        import.meta.env.VITE_EMAILJS_SERVICE_ID,
+        import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
+        formRef.current!,
+        import.meta.env.VITE_EMAILJS_PUBLIC_KEY
+      );
+      setIsSubmitted(true);
+      formRef.current?.reset();
+    } catch {
+      // Graceful fallback option
+      alert('Failed to send. Please try WhatsApp or email directly.');
+    } finally {
+      setIsSending(false);
+    }
   };
 
   return (
@@ -740,9 +927,9 @@ const ContactSection = () => {
 
             <div className="space-y-6">
               {[
-                { icon: <Instagram />, text: '@tboywurldwebstudio', href: 'https://www.instagram.com/tboywurldwebstudio/' },
-                { icon: <MessageCircle />, text: '+234 916 105 2803', href: 'https://wa.me/2349161052803' },
-                { icon: <Mail />, text: 'btee7746@gmail.com', href: 'mailto:btee7746@gmail.com' },
+                { icon: <Instagram />, text: CONTACT.handle, href: CONTACT.instagram },
+                { icon: <MessageCircle />, text: CONTACT.phone, href: CONTACT.whatsapp },
+                { icon: <Mail />, text: CONTACT.email, href: `mailto:${CONTACT.email}` },
               ].map((item) => (
                 <a 
                   key={item.text}
@@ -777,22 +964,28 @@ const ContactSection = () => {
                 </div>
                 <h4 className="text-3xl font-display font-bold">Message Sent!</h4>
                 <p className="text-gray-400">Thank you for reaching out. We'll get back to you within 24 hours.</p>
+                <button 
+                  onClick={() => setIsSubmitted(false)}
+                  className="text-xs text-accent underline mt-4 hover:text-accent-glow"
+                >
+                  Send another message
+                </button>
               </motion.div>
             ) : (
-              <form className="space-y-6" onSubmit={handleSubmit}>
+              <form ref={formRef} className="space-y-6" onSubmit={handleSubmit}>
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="text-xs font-bold uppercase tracking-widest text-gray-400 ml-2">Name</label>
-                    <input type="text" required placeholder="John Doe" className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 focus:outline-none focus:border-accent transition-colors" />
+                    <input type="text" name="name" required placeholder="John Doe" className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 focus:outline-none focus:border-accent transition-colors" />
                   </div>
                   <div className="space-y-2">
                     <label className="text-xs font-bold uppercase tracking-widest text-gray-400 ml-2">Email</label>
-                    <input type="email" required placeholder="john@example.com" className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 focus:outline-none focus:border-accent transition-colors" />
+                    <input type="email" name="email" required placeholder="john@example.com" className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 focus:outline-none focus:border-accent transition-colors" />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-bold uppercase tracking-widest text-gray-400 ml-2">Subject</label>
-                  <select className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 focus:outline-none focus:border-accent transition-colors">
+                  <select name="subject" className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 focus:outline-none focus:border-accent transition-colors">
                     <option className="bg-black">Project Inquiry</option>
                     <option className="bg-black">Partnership</option>
                     <option className="bg-black">Other</option>
@@ -800,10 +993,14 @@ const ContactSection = () => {
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-bold uppercase tracking-widest text-gray-400 ml-2">Message</label>
-                  <textarea rows={4} required placeholder="Tell us about your project..." className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 focus:outline-none focus:border-accent transition-colors resize-none"></textarea>
+                  <textarea name="message" rows={4} required placeholder="Tell us about your project..." className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 focus:outline-none focus:border-accent transition-colors resize-none"></textarea>
                 </div>
-                <button type="submit" className="w-full bg-accent hover:bg-accent-glow text-white font-bold py-5 rounded-2xl flex items-center justify-center gap-3 transition-all active:scale-[0.98] shadow-[0_0_30px_rgba(168,85,247,0.3)]">
-                  Send Message
+                <button 
+                  type="submit" 
+                  disabled={isSending} 
+                  className="w-full bg-accent hover:bg-accent-glow disabled:opacity-50 disabled:pointer-events-none text-white font-bold py-5 rounded-2xl flex items-center justify-center gap-3 transition-all active:scale-[0.98] shadow-[0_0_30px_rgba(168,85,247,0.3)]"
+                >
+                  {isSending ? 'Sending...' : 'Send Message'}
                   <Send size={18} />
                 </button>
               </form>
@@ -829,13 +1026,13 @@ const Footer = () => {
         <p className="text-gray-500 text-sm">© 2026 Tboywurld Web Studio. All rights reserved.</p>
         
         <div className="flex gap-6">
-          <a href="https://www.instagram.com/tboywurldwebstudio/" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-accent transition-colors">
+          <a href={CONTACT.instagram} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-accent transition-colors">
             <Instagram size={20} />
           </a>
-          <a href="https://wa.me/2349161052803" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-accent transition-colors">
+          <a href={CONTACT.whatsapp} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-accent transition-colors">
             <MessageCircle size={20} />
           </a>
-          <a href="mailto:btee7746@gmail.com" className="text-gray-500 hover:text-accent transition-colors">
+          <a href={`mailto:${CONTACT.email}`} className="text-gray-500 hover:text-accent transition-colors">
             <Mail size={20} />
           </a>
         </div>
@@ -844,25 +1041,9 @@ const Footer = () => {
   );
 };
 
-// Helper Icon since Rocket is not always in standard Lucide
-const RocketIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/>
-    <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/>
-    <path d="M9 12H4s.55-3.03 2-5c1.62-2.2 5-3 5-3"/>
-    <path d="M12 15v5s3.03-.55 5-2c2.2-1.62 3-5 3-5"/>
-  </svg>
-);
-
 export default function App() {
-  const [isLoading, setIsLoading] = useState(true);
-  const [selectedProject, setSelectedProject] = useState<any>(null);
-
-  useEffect(() => {
-    // Simulate loading
-    const timer = setTimeout(() => setIsLoading(false), 2000);
-    return () => clearTimeout(timer);
-  }, []);
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
   return (
     <div className="bg-[#050505] min-h-screen selection:bg-accent/40 text-white overflow-x-hidden">
