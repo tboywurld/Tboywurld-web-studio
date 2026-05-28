@@ -902,9 +902,10 @@ const ContactSection = () => {
       );
       setIsSubmitted(true);
       formRef.current?.reset();
-    } catch {
-      // Graceful fallback option
-      alert('Failed to send. Please try WhatsApp or email directly.');
+    } catch (error: any) {
+      console.error('EmailJS Error:', error);
+      const msg = error?.text || error?.message || JSON.stringify(error);
+      alert(`Failed to send: ${msg}`);
     } finally {
       setIsSending(false);
     }
