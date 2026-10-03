@@ -113,6 +113,13 @@ const projects = [
     link: 'https://hale-road-dental-practice.vercel.app/',
     number: '12',
   },
+  {
+    title: 'Wilson Paradise',
+    category: 'Real estate',
+    image: 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1500&q=85',
+    link: 'https://wilson-paradise.vercel.app/',
+    number: '13',
+  },
 ];
 
 const navLinks = [
