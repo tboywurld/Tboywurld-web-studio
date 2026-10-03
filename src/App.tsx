@@ -72,7 +72,7 @@ const projects = [
     number: '06',
   },
   {
-    title: 'NIDSUG Delta State Chapter',
+    title: 'NIDSUG Student Portal',
     category: 'Education & community',
     image: 'https://nidsug-delta-portal.vercel.app/_next/image?url=%2Fnidsug-hero.png&w=1080&q=75',
     link: 'https://nidsug-delta-portal.vercel.app/',
@@ -290,7 +290,7 @@ function Hero() {
             </div>
             <div className="mt-4 flex items-center justify-between text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-ink/50">
               <span>Designing for the web</span>
-              <span>Lagos, Nigeria · Worldwide</span>
+              <span>Worldwide · Remote</span>
             </div>
           </FadeIn>
         </div>
@@ -486,7 +486,7 @@ function AboutSection() {
           </div>
           <div className="max-w-2xl">
             <p className="text-xl leading-relaxed text-ink/80 md:text-2xl">
-              Tboywurld is an independent web studio in Nigeria, working with businesses near and far.
+              Tboywurld is an independent, remote-first web studio working with businesses worldwide.
             </p>
             <p className="mt-6 leading-relaxed text-ink/60">
               You work directly with me from the first conversation to launch. That means clear communication, considered decisions and a website shaped around your business—not a one-size-fits-all template.
@@ -548,8 +548,8 @@ function FAQSection() {
       answer: 'Timing depends on the scope, content and features. Once we’ve discussed your needs, I’ll share a realistic timeline before any work begins.',
     },
     {
-      question: 'Can you work with businesses outside Nigeria?',
-      answer: 'Yes. Tboywurld is based in Nigeria and works with clients remotely. We can keep in touch through email and online calls.',
+      question: 'Do you work with clients worldwide?',
+      answer: 'Yes. Tboywurld works remotely with businesses around the world. We can keep in touch through email and online calls.',
     },
     {
       question: 'Will my website work on mobile?',
