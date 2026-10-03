@@ -81,7 +81,7 @@ const projects = [
   {
     title: 'NairaPass',
     category: 'Education & technology',
-    image: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=85&w=1200',
+    image: '/nairapass-preview.png',
     link: 'https://nairapass.com.ng/',
     number: '08',
   },
